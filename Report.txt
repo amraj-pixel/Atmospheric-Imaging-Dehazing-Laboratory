@@ -1,0 +1,6 @@
+AI IMAGE DEHAZING REPORT
+=========================
+
+Project : AI Powered Intelligent Image Dehazing System
+
+Report Generated Successfully

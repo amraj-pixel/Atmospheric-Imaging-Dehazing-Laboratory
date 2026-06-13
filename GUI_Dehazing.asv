@@ -1,0 +1,573 @@
+function GUI_Dehazing()
+
+clc;
+clear;
+close all;
+
+% =========================================================
+% MAIN WINDOW
+% =========================================================
+
+f = figure(...
+    'Name','NEBULA-X : AI Atmospheric Vision Laboratory',...
+    'NumberTitle','off',...
+    'Units','normalized',...
+    'OuterPosition',[0 0 1 1],...
+    'Color',[0.94 0.97 1],...
+    'MenuBar','none',...
+    'ToolBar','none');
+
+% =========================================================
+% TITLE
+% =========================================================
+
+uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.15 0.94 0.7 0.035],...
+    'String','AI BASED REAL-TIME ATMOSPHERIC VISIBILITY ENHANCEMENT SYSTEM',...
+    'FontSize',20,...
+    'FontWeight','bold',...
+    'ForegroundColor',[0 0.4 0.8],...
+    'BackgroundColor',[0.94 0.97 1]);
+
+uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.25 0.91 0.5 0.025],...
+    'String','Scientific Fog Analysis • Thermal Mapping • AI Vision',...
+    'FontSize',11,...
+    'ForegroundColor',[0 0.5 0.7],...
+    'BackgroundColor',[0.94 0.97 1]);
+
+% =========================================================
+% DATE & TIME
+% =========================================================
+
+datetime_text = uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.80 0.94 0.18 0.03],...
+    'String',datestr(now,'dd-mmm-yyyy | HH:MM:SS'),...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'ForegroundColor',[0 0.5 0],...
+    'BackgroundColor',[0.94 0.97 1]);
+
+tmr = timer(...
+    'ExecutionMode','fixedSpacing',...
+    'Period',1,...
+    'TimerFcn',@updateClock);
+
+start(tmr);
+
+% =========================================================
+% BUTTON COLORS
+% =========================================================
+
+btn = [0 0.6 0.8];
+
+% =========================================================
+% BUTTONS
+% =========================================================
+
+uicontrol('Style','pushbutton',...
+    'Units','normalized',...
+    'Position',[0.03 0.85 0.08 0.05],...
+    'String','Upload',...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'BackgroundColor',btn,...
+    'ForegroundColor','white',...
+    'Callback',@upload_callback);
+
+uicontrol('Style','pushbutton',...
+    'Units','normalized',...
+    'Position',[0.13 0.85 0.08 0.05],...
+    'String','Process',...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'BackgroundColor',btn,...
+    'ForegroundColor','white',...
+    'Callback',@process_callback);
+
+uicontrol('Style','pushbutton',...
+    'Units','normalized',...
+    'Position',[0.23 0.85 0.08 0.05],...
+    'String','Save',...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'BackgroundColor',btn,...
+    'ForegroundColor','white',...
+    'Callback',@save_callback);
+
+uicontrol('Style','pushbutton',...
+    'Units','normalized',...
+    'Position',[0.33 0.85 0.08 0.05],...
+    'String','3D Fog',...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'BackgroundColor',[0.9 0.5 0.1],...
+    'ForegroundColor','white',...
+    'Callback',@fog3d_callback);
+
+uicontrol('Style','pushbutton',...
+    'Units','normalized',...
+    'Position',[0.43 0.85 0.08 0.05],...
+    'String','Thermal',...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'BackgroundColor',[1 0.4 0.2],...
+    'ForegroundColor','white',...
+    'Callback',@thermal_callback);
+
+uicontrol('Style','pushbutton',...
+    'Units','normalized',...
+    'Position',[0.53 0.85 0.08 0.05],...
+    'String','Particles',...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'BackgroundColor',[0.2 0.7 0.4],...
+    'ForegroundColor','white',...
+    'Callback',@particle_callback);
+
+uicontrol('Style','pushbutton',...
+    'Units','normalized',...
+    'Position',[0.63 0.85 0.08 0.05],...
+    'String','Report',...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'BackgroundColor',[0.8 0.3 0.8],...
+    'ForegroundColor','white',...
+    'Callback',@report_callback);
+
+uicontrol('Style','pushbutton',...
+    'Units','normalized',...
+    'Position',[0.73 0.85 0.08 0.05],...
+    'String','Exit',...
+    'FontSize',11,...
+    'FontWeight','bold',...
+    'BackgroundColor',[0.9 0.2 0.2],...
+    'ForegroundColor','white',...
+    'Callback',@exit_callback);
+
+% =========================================================
+% STATUS
+% =========================================================
+
+status_text = uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.80 0.85 0.18 0.04],...
+    'String','STATUS : WAITING',...
+    'FontSize',12,...
+    'FontWeight','bold',...
+    'ForegroundColor',[0 0.4 0.8],...
+    'BackgroundColor',[0.94 0.97 1]);
+
+% =========================================================
+% METRICS
+% =========================================================
+
+psnr_text = uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.76 0.74 0.2 0.03],...
+    'String','PSNR : ',...
+    'FontSize',12,...
+    'ForegroundColor','black',...
+    'BackgroundColor',[0.94 0.97 1]);
+
+fog_text = uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.76 0.70 0.2 0.03],...
+    'String','Fog Density : ',...
+    'FontSize',12,...
+    'ForegroundColor','black',...
+    'BackgroundColor',[0.94 0.97 1]);
+
+scene_text = uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.76 0.66 0.2 0.03],...
+    'String','Scene : ',...
+    'FontSize',12,...
+    'ForegroundColor','black',...
+    'BackgroundColor',[0.94 0.97 1]);
+
+visibility_text = uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.76 0.62 0.2 0.03],...
+    'String','Visibility : ',...
+    'FontSize',12,...
+    'ForegroundColor','black',...
+    'BackgroundColor',[0.94 0.97 1]);
+
+quality_text = uicontrol('Style','text',...
+    'Units','normalized',...
+    'Position',[0.76 0.58 0.2 0.03],...
+    'String','Quality Score : ',...
+    'FontSize',12,...
+    'ForegroundColor','black',...
+    'BackgroundColor',[0.94 0.97 1]);
+
+% =========================================================
+% AXES
+% =========================================================
+
+ax1 = axes('Units','normalized','Position',[0.03 0.52 0.2 0.22]);
+title('Hazy Image');
+
+ax2 = axes('Units','normalized','Position',[0.27 0.52 0.2 0.22]);
+title('Dark Channel');
+
+ax3 = axes('Units','normalized','Position',[0.51 0.52 0.2 0.22]);
+title('Transmission Map');
+
+ax4 = axes('Units','normalized','Position',[0.03 0.20 0.2 0.22]);
+title('Refined Transmission');
+
+ax5 = axes('Units','normalized','Position',[0.27 0.20 0.2 0.22]);
+title('Haze Thickness');
+
+ax6 = axes('Units','normalized','Position',[0.51 0.20 0.2 0.22]);
+title('Enhanced Image');
+
+ax7 = axes('Units','normalized','Position',[0.76 0.34 0.2 0.12]);
+title('Histogram Analysis');
+
+ax8 = axes('Units','normalized','Position',[0.76 0.14 0.2 0.12]);
+title('Pixel Comparison');
+
+% =========================================================
+% UPLOAD FUNCTION
+% =========================================================
+
+function upload_callback(~,~)
+
+[file,path] = uigetfile({'*.jpg;*.png;*.bmp'});
+
+if isequal(file,0)
+    return;
+end
+
+img = im2double(imread(fullfile(path,file)));
+
+setappdata(f,'hazy',img);
+
+axes(ax1);
+imshow(img);
+
+set(status_text,'String','STATUS : IMAGE UPLOADED');
+
+end
+
+% =========================================================
+% PROCESS FUNCTION
+% =========================================================
+
+function process_callback(~,~)
+
+if ~isappdata(f,'hazy')
+
+    msgbox('Upload Image First');
+    return;
+
+end
+
+img = getappdata(f,'hazy');
+
+h = waitbar(0,'Processing AI Dehazing...');
+
+waitbar(0.2,h);
+
+dark = min(img,[],3);
+
+waitbar(0.4,h);
+
+gray = mean(img,3);
+
+tmap = 1 - 0.95 * gray;
+
+tmap = max(tmap,0.2);
+
+waitbar(0.6,h);
+
+kernel = ones(5)/25;
+
+tref = conv2(tmap,kernel,'same');
+
+waitbar(0.8,h);
+
+A = 1;
+
+J = zeros(size(img));
+
+for c = 1:3
+
+    J(:,:,c) = (img(:,:,c)-A)./tref + A;
+
+end
+
+J = max(J,0);
+J = min(J,1);
+
+enhanced = J.^0.9;
+
+enhanced = enhanced * 1.2;
+
+enhanced(enhanced > 1) = 1;
+
+haze = 1 - tref;
+
+waitbar(1,h);
+
+pause(0.5);
+
+close(h);
+
+setappdata(f,'enhanced',enhanced);
+setappdata(f,'haze',haze);
+
+% DISPLAY
+
+axes(ax2);
+imshow(dark);
+
+axes(ax3);
+imagesc(tmap);
+axis off
+colormap turbo
+
+axes(ax4);
+imagesc(tref);
+axis off
+colormap turbo
+
+axes(ax5);
+imagesc(haze);
+axis off
+colormap hot
+
+axes(ax6);
+imshow(enhanced);
+
+% HISTOGRAM
+
+gray1 = mean(img,3);
+gray2 = mean(enhanced,3);
+
+axes(ax7);
+
+cla;
+
+histogram(gray1(:),128,'FaceColor','red');
+
+hold on;
+
+histogram(gray2(:),128,'FaceColor','blue');
+
+legend('Original','Enhanced');
+
+grid on
+
+hold off;
+
+% PIXEL GRAPH
+
+axes(ax8);
+
+row = round(size(gray1,1)/2);
+
+plot(gray1(row,:),'r','LineWidth',1.5);
+
+hold on;
+
+plot(gray2(row,:),'b','LineWidth',1.5);
+
+legend('Original','Enhanced');
+
+grid on
+
+hold off;
+
+% METRICS
+
+mse = mean((gray1(:)-gray2(:)).^2);
+
+psnr_val = 10*log10(1/mse);
+
+fog = mean(tref(:));
+
+visibility = round(fog*100);
+
+score = min(100,round(psnr_val*5));
+
+set(psnr_text,...
+'String',['PSNR : ',num2str(psnr_val)]);
+
+set(fog_text,...
+'String',['Fog Density : ',num2str(fog)]);
+
+set(scene_text,...
+'String','Scene : Atmospheric');
+
+set(visibility_text,...
+'String',['Visibility : ',num2str(visibility)]);
+
+set(quality_text,...
+'String',['Quality Score : ',num2str(score),'%']);
+
+set(status_text,...
+'String','STATUS : ANALYSIS COMPLETE');
+
+end
+
+% =========================================================
+% SAVE FUNCTION
+% =========================================================
+
+function save_callback(~,~)
+
+if ~isappdata(f,'enhanced')
+    return;
+end
+
+enhanced = getappdata(f,'enhanced');
+
+[file,path] = uiputfile('output.jpg');
+
+if isequal(file,0)
+    return;
+end
+
+imwrite(enhanced,fullfile(path,file));
+
+msgbox('Enhanced Image Saved Successfully');
+
+end
+
+% =========================================================
+% 3D FOG
+% =========================================================
+
+function fog3d_callback(~,~)
+
+if ~isappdata(f,'haze')
+    return;
+end
+
+haze = getappdata(f,'haze');
+
+figure;
+
+surf(haze);
+
+shading interp
+
+rotate3d on
+
+colormap turbo
+
+colorbar
+
+title('3D Atmospheric Fog Density');
+
+end
+
+% =========================================================
+% THERMAL
+% =========================================================
+
+function thermal_callback(~,~)
+
+if ~isappdata(f,'enhanced')
+    return;
+end
+
+enhanced = getappdata(f,'enhanced');
+
+gray = mean(enhanced,3);
+
+figure;
+
+imagesc(gray);
+
+colormap hot
+
+colorbar
+
+title('Thermal Visibility Analysis');
+
+end
+
+% =========================================================
+% PARTICLE SIMULATION
+% =========================================================
+
+function particle_callback(~,~)
+
+figure;
+
+for i = 1:100
+
+scatter(rand(1,200),rand(1,200),15,'filled');
+
+axis([0 1 0 1]);
+
+title('Atmospheric Particle Simulation');
+
+drawnow;
+
+end
+
+end
+
+% =========================================================
+% REPORT
+% =========================================================
+
+function report_callback(~,~)
+
+[file,path] = uiputfile('Scientific_Report.txt');
+
+if isequal(file,0)
+    return;
+end
+
+report = fopen(fullfile(path,file),'w');
+
+fprintf(report,'AI ATMOSPHERIC VISIBILITY REPORT\n');
+fprintf(report,'================================\n');
+fprintf(report,'Scientific Analysis Completed\n');
+
+fclose(report);
+
+msgbox('Scientific Report Exported');
+
+end
+
+% =========================================================
+% CLOCK UPDATE
+% =========================================================
+
+function updateClock(~,~)
+
+if isvalid(datetime_text)
+
+set(datetime_text,...
+'String',datestr(now,'dd-mmm-yyyy | HH:MM:SS'));
+
+end
+
+end
+
+% =========================================================
+% EXIT
+% =========================================================
+
+function exit_callback(~,~)
+
+stop(tmr);
+
+delete(tmr);
+
+close(f);
+
+end
+
+end

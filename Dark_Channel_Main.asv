@@ -1,0 +1,103 @@
+clc;
+clear;
+close all;
+
+% Read image
+hazy_image = imread('01_indoor_GT.jpg');   % change name if needed
+hazy_image = im2double(hazy_image);
+
+% Call function
+J_DARK = Dark_Channel(hazy_image);
+
+% Display
+figure;clc;
+clear;
+close all;
+
+% Read image
+hazy_image = imread('01_indoor_GT.jpg');   % image must be in same folder
+hazy_image = im2double(hazy_image);
+
+[r, c, m] = size(hazy_image);
+
+% Patch size
+P_S = 15;
+p = floor((P_S - 1) / 2);
+
+% Initialize dark channel
+J_DARK = zeros(r, c);
+
+% Dark Channel computation
+for i = 1:r
+    for j = 1:c
+        
+        % Patch boundaries (replicate padding logic)
+        rmin = max(i - p, 1);
+        rmax = min(i + p, r);
+        cmin = max(j - p, 1);
+        cmax = min(j + p, c);
+        
+        local_patch = hazy_image(rmin:rmax, cmin:cmax, :);
+        
+        % Minimum across RGB channels
+        min_c = zeros(1, m);
+        for k = 1:m
+            min_c(k) = min(local_patch(:,:,k), [], 'all');
+        end
+        
+        % Dark channel value
+        J_DARK(i, j) = min(min_c);
+        
+    end
+end
+
+% Display results
+figure;
+imshow(hazy_image);
+title('Original Hazy Image');
+
+figure;
+imshow(J_DARK, []);
+title('Dark Channel Image');
+
+imshow(hazy_image);
+title('Original Hazy Image');
+
+figure;
+imshow(J_DARK, []);
+title('Dark Channel Image');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Local function (NO padarray used)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function J_DARK = Dark_Channel(hazy_image)
+
+[r, c, m] = size(hazy_image);
+P_S = 15;
+p = floor((P_S - 1) / 2);
+
+% Initialize dark channel
+J_DARK = zeros(r, c);
+
+for i = 1:r
+    for j = 1:c
+        
+        % Patch boundaries (replicate padding logic)
+        rmin = max(i - p, 1);
+        rmax = min(i + p, r);
+        cmin = max(j - p, 1);
+        cmax = min(j + p, c);
+        
+        local_patch = hazy_image(rmin:rmax, cmin:cmax, :);
+        
+        minimum_c = zeros(1, m);
+        for k = 1:m
+            minimum_c(k) = min(local_patch(:,:,k), [], 'all');
+        end
+        
+        J_DARK(i, j) = min(minimum_c);
+        
+    end
+end
+
+end
